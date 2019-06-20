@@ -65,6 +65,65 @@ class RegionOfInterestDetection(pymotutils.Detection):
             class_label=class_label, class_name=class_name)
 
 
+class MaskBasedDetection(pymotutils.Detection):
+    """
+    This class is similar to RegionOfInterestDetection but adds further attributes to deal with detections
+    coming from TrackRCNN which have an RLE encoded segmentation mask and a reid score
+
+    Parameters
+    ----------
+    frame_idx : int
+        Index of the frame at which this detection occured.
+    roi : ndarray
+        The region of interest in which the object is contained as 4
+        dimensional vector (x, y, w, h) where (x, y) is the top-left corner
+        and (w, h) is the extent. If xyz is None, the sensor_data field is
+        set to this value.
+    confidence : NoneType | float
+        Optional detector confidence score. If not None, it is appended to the
+        sensor_data field of the detection.
+    xyz : NoneType | ndarray
+        Optional object locataion, e.g., in camera or world frame. If given,
+        the sensor_data attribute is set to this value.
+    feature : ndarray
+        Appearance descriptor, in this case it is the reid vector computed by TrackRCNN.
+    rle_mask : dict
+        The RLE encoded mask coming from TrackRCNN
+    do_not_care : bool
+        This flag indicates whether this detection should be included
+        in evaluation.
+        If True, missing this detection will be counted as false negative. If
+        False, missing this detection will not have a negative impact on
+        tracking performance. Therefore, this flag can be used to mark hard to
+        detect objects (such as full occlusions) in ground truth.
+
+    Attributes
+    ----------
+    roi : ndarray
+        The region of interest in which the object is contained as 4
+        dimensional vector (x, y, w, h) where (x, y) is the top-left corner
+        and (w, h) is the extent.
+    confidence : NoneType | float
+        Optinal detector confidence score
+    xyz : NoneType | ndarray
+        Optional object location, e.g., in camera or world frame.
+    feature : ndarray
+        Appearance descriptor, in this case it is the reid vector computed by TrackRCNN.
+    rle_mask : dict
+        The RLE encoded mask coming from TrackRCNN
+
+    """
+
+    def __init__(self, frame_idx, roi, confidence=None, xyz=None, feature=None, rle_mask=None,
+            do_not_care=False):
+        sensor_data = xyz if xyz is not None else roi
+        if confidence is not None:
+            sensor_data = np.r_[sensor_data, confidence]
+        super(MaskBasedDetection, self).__init__(
+            frame_idx, sensor_data, do_not_care=do_not_care, roi=roi,
+            confidence=confidence, xyz=xyz, feature=feature, rle_mask=rle_mask)
+
+
 class MonoVisualization(pymotutils.ImageVisualization):
     """
     This class implements an image-based visualization of tracking output
